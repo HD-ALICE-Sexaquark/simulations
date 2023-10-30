@@ -1,22 +1,21 @@
-AliGenerator *GeneratorCustom() {
+AliGenerator *GeneratorCustom(Char_t reaction_channel = 'A', Double_t mass_sexaquark = 1.8)
+{
 
-    // cocktail
-    AliGenCocktail *ctl = (AliGenCocktail *)GeneratorCocktail("Hijing+Sexaquark");
+    AliGenCocktail *ctl = (AliGenCocktail *)GeneratorCocktail("Hijing+AntiNeutron+AntiSexaquark");
 
-    // bkg
     AliGenHijing *hij = (AliGenHijing *)GeneratorHijing();
-    hij->SetPtRange(0., 5.);
-    hij->SetYRange(-0.8, 0.8);
     ctl->AddGenerator(hij, "Hijing", 1.);
 
-    // signal
-    AliGenSexaquarkReaction *sr = new AliGenSexaquarkReaction();
-    sr->SetReaction();
-    sr->SetPtRange(0., 5.);
-    sr->SetPhiRange(0., 360.);
+    AliGenerator *ani = GeneratorInjector(40, -2112, 0., 6., -0.8, 0.8);
+    ctl->AddGenerator(ani, "Injector (Anti-Neutron)", 1.);
+
+    AliGenSexaquarkReaction *sr = new AliGenSexaquarkReaction(20, mass_sexaquark, reaction_channel);
+    sr->SetPtRange(0., 5.);    // GeV/c
+    sr->SetPhiRange(0., 360.); // degrees
     sr->SetYRange(-0.8, 0.8);
-    sr->SetRadiusRange(5., 180.);
-    ctl->AddGenerator(sr, "Sexaquark", 1.);
+    sr->SetRadiusRange(5., 180.); // cm
+
+    ctl->AddGenerator(sr, Form("Anti-Sexaquark Interaction (Channel %c)", reaction_channel), 1.);
 
     return ctl;
 }
