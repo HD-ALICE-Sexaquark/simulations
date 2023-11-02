@@ -18,12 +18,11 @@
 
  author: aborquez@cern.ch
  */
-class AliGenSexaquarkReaction : public AliGenerator
-{
+class AliGenSexaquarkReaction : public AliGenerator {
 
-/* Copied from AliGenBox */
+    /* Copied from AliGenBox */
 
-public:
+   public:
     AliGenSexaquarkReaction();
     AliGenSexaquarkReaction(Int_t NReactions, Float_t SexaquarkMass, Char_t ReactionChannel);
     virtual ~AliGenSexaquarkReaction();
@@ -32,46 +31,46 @@ public:
     virtual void Init();
     virtual void SetSeed(UInt_t /*seed*/) { ; }
 
-/* Sexaquark */
+    /* Sexaquark */
 
-public:
+   public:
     /*
      Set minimum and maximum radius for uniform distribution to locate interaction (or secondary) vertex
      */
     void SetDefaultRanges();
-    void SetRadiusRange(Float_t radiusMin, Float_t radiusMax)
-    {
+    void SetRadiusRange(Float_t radiusMin, Float_t radiusMax) {
         fRadiusMin = radiusMin;
         fRadiusMax = radiusMax;
     };
     void InitReactionsInfo();
     void PrintParameters();
-    Int_t fCurrentReactionID; // ID of current reaction
-private:
-    std::map<Char_t, std::vector<std::vector<Int_t>>> fReactionChannelsMap; // PDG codes of the products of the current reaction
-    Float_t fRadiusMin;                        // minimum radius
-    Float_t fRadiusMax;                        // maximum radius
-    Float_t fStruckNucleonPDG;                 // PDG code of struck nucleon
-    std::vector<Int_t> fReactionProductsPDG;   // vector of PDG codes of reaction products
+    Int_t fCurrentReactionID;  // ID of current reaction
+   private:
+    std::map<Char_t, std::vector<std::vector<Int_t>>> fReactionChannelsMap;  // PDG codes of the products of the current reaction
+    Float_t fRadiusMin;                                                      // minimum radius
+    Float_t fRadiusMax;                                                      // maximum radius
+    Float_t fStruckNucleonPDG;                                               // PDG code of struck nucleon
+    std::vector<Int_t> fReactionProductsPDG;                                 // vector of PDG codes of reaction products
 
-/* Fermi Momentum */
+    /* Fermi Momentum */
 
-public:
+   public:
     void InitFermiMomentumInfo();
     void GetFermiMomentum(Float_t &px, Float_t &py, Float_t &pz);
-private:
-    Float_f fFermiMomentum; // central value of Fermi Momentum
-    Float_f fFermiMomentumError; // sigma value of Fermi Momentum
-    TF1* fFermiMomentumModel;
 
-/* Input Options */
+   private:
+    Float_f fFermiMomentum;       // central value of Fermi Momentum
+    Float_f fFermiMomentumError;  // sigma value of Fermi Momentum
+    TF1 *fFermiMomentumModel;
 
-private:
+    /* Input Options */
+
+   private:
     Int_t fNReactions;
     Float_t fSexaquarkMass;
     Char_t fReactionChannel;
 
-    ClassDef(AliGenSexaquarkReaction, 3); // integrate class for interactive use in ROOT
+    ClassDef(AliGenSexaquarkReaction, 3);  // integrate class for interactive use in ROOT
 };
 
 #endif

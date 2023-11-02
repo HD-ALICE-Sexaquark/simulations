@@ -17,7 +17,7 @@
 
 #define VERBOSE_MODE 1
 
-ClassImp(AliGenSexaquarkReaction); // integrate class for interactive use in ROOT
+ClassImp(AliGenSexaquarkReaction);  // integrate class for interactive use in ROOT
 
 /*
  Default constructor:
@@ -40,7 +40,13 @@ AliGenSexaquarkReaction::AliGenSexaquarkReaction()
  - As no specific nucleon or decay channel was provided, all reactions will be produced randomly
  */
 AliGenSexaquarkReaction::AliGenSexaquarkReaction(Int_t NReactions, Float_t SexaquarkMass, Char_t ReactionChannel)
-     : AliGenerator(NReactions), fStruckNucleonPDG(0), fSexaquarkMass(SexaquarkMass), fReactionChannel(ReactionChannel), fReactionProductsPDG(0), fRadiusMin(0.), fRadiusMax(0.) {
+    : AliGenerator(NReactions),
+      fStruckNucleonPDG(0),
+      fSexaquarkMass(SexaquarkMass),
+      fReactionChannel(ReactionChannel),
+      fReactionProductsPDG(0),
+      fRadiusMin(0.),
+      fRadiusMax(0.) {
     fName = "AliGenSexaquarkReaction";
     fTitle = "Generator of AntiSexaquark-Nucleon Reactions";
     InitReactionsInfo();
@@ -52,9 +58,7 @@ AliGenSexaquarkReaction::AliGenSexaquarkReaction(Int_t NReactions, Float_t Sexaq
 /*
  Default destructor
 */
-AliGenSexaquarkReaction::~AliGenSexaquarkReaction() {
-    delete fFermiMomentumModel;
-}
+AliGenSexaquarkReaction::~AliGenSexaquarkReaction() { delete fFermiMomentumModel; }
 
 /*
  Initialisation, check consistency of selected ranges
@@ -84,24 +88,24 @@ void AliGenSexaquarkReaction::Init() {
  Prepare the allowed decay channels to the set of vectors
  */
 void AliGenSexaquarkReaction::SetDefaultRanges() {
-    SetRadiusRange(5., 180.); // cm
-    SetPtRange(0., 5.);    // GeV/c
-    SetPhiRange(0., 360.); // degrees
-    SetYRange(-0.8, 0.8); // no units
+    SetRadiusRange(5., 180.);  // cm
+    SetPtRange(0., 5.);        // GeV/c
+    SetPhiRange(0., 360.);     // degrees
+    SetYRange(-0.8, 0.8);      // no units
 }
 
 /*
  Prepare the allowed decay channels to the set of vectors
  */
 void AliGenSexaquarkReaction::InitReactionsInfo() {
-    fReactionChannelsMap['A'] = {{2112}, {-3122, 310}};            // AntiS + Neutron -> AntiLambda, K0
-    fReactionChannelsMap['B'] = {{2112}, {-3122, 310, -211, 211}}; // AntiS + Neutron -> AntiLambda, K0, Pi-, Pi+
-    fReactionChannelsMap['C'] = {{2112}, {-2212, 310, 310, 211}};  // AntiS + Neutron -> AntiProton, K0, K0, Pi+
-    fReactionChannelsMap['D'] = {{2212}, {-3122, 321}};            // AntiS + Proton -> AntiLambda, K+
-    fReactionChannelsMap['E'] = {{2212}, {-3122, 321, -211, 211}}; // AntiS + Proton -> AntiLambda, K+, Pi-, Pi+
-    fReactionChannelsMap['F'] = {{2212}, {-2212, 321, 310, 211}};  // AntiS + Proton -> AntiProton, K+, K0, Pi+
-    fReactionChannelsMap['G'] = {{2112}, {-3312, -211}};           // AntiS + Neutron -> Xi+, Pi-
-    fReactionChannelsMap['H'] = {{2212}, {-2212, 321, 321, 111}};  // AntiS + Proton -> AntiProton, K+, K+, Pi0
+    fReactionChannelsMap['A'] = {{2112}, {-3122, 310}};             // AntiS + Neutron -> AntiLambda, K0
+    fReactionChannelsMap['B'] = {{2112}, {-3122, 310, -211, 211}};  // AntiS + Neutron -> AntiLambda, K0, Pi-, Pi+
+    fReactionChannelsMap['C'] = {{2112}, {-2212, 310, 310, 211}};   // AntiS + Neutron -> AntiProton, K0, K0, Pi+
+    fReactionChannelsMap['D'] = {{2212}, {-3122, 321}};             // AntiS + Proton -> AntiLambda, K+
+    fReactionChannelsMap['E'] = {{2212}, {-3122, 321, -211, 211}};  // AntiS + Proton -> AntiLambda, K+, Pi-, Pi+
+    fReactionChannelsMap['F'] = {{2212}, {-2212, 321, 310, 211}};   // AntiS + Proton -> AntiProton, K+, K0, Pi+
+    fReactionChannelsMap['G'] = {{2112}, {-3312, -211}};            // AntiS + Neutron -> Xi+, Pi-
+    fReactionChannelsMap['H'] = {{2212}, {-2212, 321, 321, 111}};   // AntiS + Proton -> AntiProton, K+, K+, Pi0
 }
 
 /*
@@ -109,12 +113,12 @@ void AliGenSexaquarkReaction::InitReactionsInfo() {
  */
 void AliGenSexaquarkReaction::InitFermiMomentumInfo() {
     // central value and error obtained from:
-    // Povh, Rith, Scholz, Zetsche, Rodejohann. "Particles and Nuclei: An Introduction to the Physical Concepts". 7th edition (Springer, 2015)
+    // Povh, Rith, Scholz, Zetsche, Rodejohann. "Particles and Nuclei: An Introduction to the Physical Concepts". 7th edition (Springer,
+    // 2015)
     fFermiMomentum = 250.;
     fFermiMomentumError = 5.;
-    fFermiMomentumModel = new TF1("Fermi Momentum Model", "[0]*exp(-0.5*((x-[1])/[2])**2) ",
-    fFermiMomentum - 5 *fFermiMomentumError,
-    fFermiMomentum + 5 *fFermiMomentumError);
+    fFermiMomentumModel = new TF1("Fermi Momentum Model", "[0]*exp(-0.5*((x-[1])/[2])**2) ", fFermiMomentum - 5 * fFermiMomentumError,
+                                  fFermiMomentum + 5 * fFermiMomentumError);
     gaussian->SetParameter(0, 1.);
     gaussian->SetParameter(1, fFermiMomentum);
     gaussian->SetParameter(2, fFermiMomentumError);
@@ -189,17 +193,15 @@ void AliGenSexaquarkReaction::Generate() {
     // - phi_S: phi -- the same in both spherical and cylindrical coordinates
     AliInfoF("   Radius   = %.4f", Radius_S);
     Float_t Radius_S = fRadiusMin + fRandom[3] * (fRadiusMax - fRadiusMin);  // radius (uniform distribution) (in cm)
-    Float_t Theta_S = Sexaquark.Theta();  // polar angle (in radians)
-    Float_t Vz_S = Radius_S / TMath::Tan(Theta_S); // z, in both cartesian and cylindrical coordinates
-    Float_t Radius3D_S = TMath::Sqrt(TMath::Power(Radius_S, 2) + TMath::Power(Vz_S, 2)); // 3D Radius -- radius in spherical coordinates
-    Float_t Vx_S = Radius3D_S * TMath::Sin(Theta_S) * TMath::Cos(Phi_S); // x, in cartesian coordinates
-    Float_t Vy_S = Radius3D_S * TMath::Sin(Theta_S) * TMath::Sin(Phi_S); // y, in cartesian coordinates
+    Float_t Theta_S = Sexaquark.Theta();                                     // polar angle (in radians)
+    Float_t Vz_S = Radius_S / TMath::Tan(Theta_S);                           // z, in both cartesian and cylindrical coordinates
+    Float_t Radius3D_S = TMath::Sqrt(TMath::Power(Radius_S, 2) + TMath::Power(Vz_S, 2));  // 3D Radius -- radius in spherical coordinates
+    Float_t Vx_S = Radius3D_S * TMath::Sin(Theta_S) * TMath::Cos(Phi_S);                  // x, in cartesian coordinates
+    Float_t Vy_S = Radius3D_S * TMath::Sin(Theta_S) * TMath::Sin(Phi_S);                  // y, in cartesian coordinates
     TVector3 SecondaryVertex(Vx_S, Vy_S, Vz_S);
 
     Float_t Beta_S = Sexaquark.P() / Sexaquark.E();
     Float_t SecondaryTime = SecondaryVertex.Mag() / (Beta_S * TMath::Ccgs());
-
-
 
 #if VERBOSE_MODE
     // verbose
@@ -275,8 +277,8 @@ void AliGenSexaquarkReaction::Generate() {
     auxSecondaryVertex[1] = SecondaryVertex.Y();
     auxSecondaryVertex[2] = SecondaryVertex.Z();
 
-    AliGenEventHeader *header = new AliGenEventHeader("BOX");
-    header->SetPrimaryVertex(auxSecondaryVertex);          // the real vertex of the interaction!
+    AliGenEventHeader* header = new AliGenEventHeader("BOX");
+    header->SetPrimaryVertex(auxSecondaryVertex);              // the real vertex of the interaction!
     header->SetNProduced((Int_t)fReactionProductsPDG.size());  // amount of particles produced?
     header->SetInteractionTime(SecondaryTime - PrimaryTime);
 
@@ -303,7 +305,7 @@ void AliGenSexaquarkReaction::GenerateN(Int_t N) {
         AliInfo("\tEvent listing (summary)");
         AliInfo("");
 #endif
-    fCurrentReactionID = fCurrentReactionID + i;
+        fCurrentReactionID = fCurrentReactionID + i;
         Generate();
     }
 }
@@ -338,14 +340,14 @@ void AliGenSexaquarkReaction::PrintParameters() {
  - uses: fFermiMomentum, fFermiMomentumError, fFermiMomentumModel
  - output: Px, Py, Pz
  */
-void AliGenSexaquarkReaction::GetFermiMomentum(Float_t& Px, Float_t & Py, Float_t & Pz) {
+void AliGenSexaquarkReaction::GetFermiMomentum(Float_t& Px, Float_t& Py, Float_t& Pz) {
 
     Float_t P_N = fFermiMomentumModel->GetRandom();
     // given the total momentum, set phi,theta as uniform and uncorrelated variables
     Float_t random_N[2];
     Rndm(random_N, 2);
-    Float_t Phi_N = 2 * TMath::Pi() * random_N[0]; // azimuthal angle (uniform distribution) (in radians)
-    Float_t Theta_N = TMath::Pi() * random_N[1];   // polar angle (uniform distribution) (in radians)
+    Float_t Phi_N = 2 * TMath::Pi() * random_N[0];  // azimuthal angle (uniform distribution) (in radians)
+    Float_t Theta_N = TMath::Pi() * random_N[1];    // polar angle (uniform distribution) (in radians)
     // then, assign px,py,pz
     Px = P_N * TMath::Cos(Phi_N) * TMath::Sin(Theta_N);
     Py = P_N * TMath::Sin(Phi_N) * TMath::Sin(Theta_N);
