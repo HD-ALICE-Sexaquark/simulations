@@ -1,49 +1,77 @@
 #ifndef ALIGENSEXAQUARKREACTION_H
 #define ALIGENSEXAQUARKREACTION_H
 
+/* Copyright(c) 1998-2023, ALICE Experiment at CERN, All rights reserved. *
+ * See cxx source for full Copyright notice                               */
+
+/* $Id$ */
+
 #include "AliGenerator.h"
 
-class AliGenSexaquarkReaction : public AliGenerator {
-   public:
+/*
+ Injector of anti-sexaquark into nucleon interactions
+ * with an injected anti-sexaquark under a flat kinematic range
+ * interaction vertex at under range
+ * struck nucleon momentum assigned with simple gaussian
+
+ [based on /EVGEN/AliGenBox.cxx/.h]
+
+ author: aborquez@cern.ch
+ */
+class AliGenSexaquarkReaction : public AliGenerator
+{
+
+/* Copied from AliGenBox */
+
+public:
     AliGenSexaquarkReaction();
+    AliGenSexaquarkReaction(Int_t NReactions, Float_t SexaquarkMass, Char_t ReactionChannel);
     virtual ~AliGenSexaquarkReaction();
     virtual void GenerateN(Int_t N);
     virtual void Generate();
     virtual void Init();
-    void SetRadiusRange(Float_t RadiusMin, Float_t RadiusMax) {
-        fRadiusMin = RadiusMin;
-        fRadiusMax = RadiusMax;
-    };
     virtual void SetSeed(UInt_t /*seed*/) { ; }
-    virtual void SetPtDistribution(TF1 &PtDistribution);
 
+/* Sexaquark */
+
+public:
+    /*
+     Set minimum and maximum radius for uniform distribution to locate interaction (or secondary) vertex
+     */
+    void SetDefaultRanges();
+    void SetRadiusRange(Float_t radiusMin, Float_t radiusMax)
+    {
+        fRadiusMin = radiusMin;
+        fRadiusMax = radiusMax;
+    };
     void InitReactionsInfo();
-    void SetReaction(Int_t NucleonPDG, std::vector<Int_t> DecayChannelPDG);
-
-    // Pt-related
-    Bool_t ComputeCdfTable(std::vector<Float_t> &Integral_vec, std::vector<Float_t> &Alpha_vec, std::vector<Float_t> &Beta_vec,
-                           std::vector<Float_t> &Gamma_vec);
-    Float_t GetRandomFromFunction(std::vector<Float_t> &Integral_vec, std::vector<Float_t> &Alpha_vec, std::vector<Float_t> &Beta_vec,
-                                   std::vector<Float_t> &Gamma_vec, Float_t r);
-
     void PrintParameters();
-    void PrintTitle();
+    Int_t fCurrentReactionID; // ID of current reaction
+private:
+    std::map<Char_t, std::vector<std::vector<Int_t>>> fReactionChannelsMap; // PDG codes of the products of the current reaction
+    Float_t fRadiusMin;                        // minimum radius
+    Float_t fRadiusMax;                        // maximum radius
+    Float_t fStruckNucleonPDG;                 // PDG code of struck nucleon
+    std::vector<Int_t> fReactionProductsPDG;   // vector of PDG codes of reaction products
 
-   protected:
-    Int_t fNucleonPDG;                    // pdg code of target/nucleon
-    std::vector<Int_t> fDecayChannelPDG;  // vector that contains the pdg codes of the decay channel
-    Float_t fRadiusMin;                  // minimum radius
-    Float_t fRadiusMax;                  // maximum radius
+/* Fermi Momentum */
 
-    // Sets of vectors to describe possible decay channels
-    // chosen to rely on the efficiency of std::set.count()
-    std::set<std::vector<Int_t>> kSexaquarkNeutronProducts;
-    std::set<std::vector<Int_t>> kSexaquarkProtonProducts;
+public:
+    void InitFermiMomentumInfo();
+    void GetFermiMomentum(Float_t &px, Float_t &py, Float_t &pz);
+private:
+    Float_f fFermiMomentum; // central value of Fermi Momentum
+    Float_f fFermiMomentumError; // sigma value of Fermi Momentum
+    TF1* fFermiMomentumModel;
 
-    TF1 *fPtDistribution;  // model to choose random Pt from
+/* Input Options */
 
-    // integrate class for interactive use in ROOT
-    ClassDef(AliGenSexaquarkReaction, 3);
+private:
+    Int_t fNReactions;
+    Float_t fSexaquarkMass;
+    Char_t fReactionChannel;
+
+    ClassDef(AliGenSexaquarkReaction, 3); // integrate class for interactive use in ROOT
 };
 
 #endif
