@@ -14,7 +14,7 @@
  * interaction vertex at under range
  * struck nucleon momentum assigned with simple gaussian
 
- [based on /EVGEN/AliGenBox.cxx/.h]
+ -- based on /EVGEN/AliGenBox[.cxx/.h]
 
  author: aborquez@cern.ch
  */
@@ -59,8 +59,8 @@ class AliGenSexaquarkReaction : public AliGenerator {
     void GetFermiMomentum(Float_t &px, Float_t &py, Float_t &pz);
 
    private:
-    Float_f fFermiMomentum;       // central value of Fermi Momentum
-    Float_f fFermiMomentumError;  // sigma value of Fermi Momentum
+    Float_t fFermiMomentum;       // central value of Fermi Momentum
+    Float_t fFermiMomentumError;  // sigma value of Fermi Momentum
     TF1 *fFermiMomentumModel;
 
     /* Input Options */
