@@ -1,3 +1,9 @@
 *.root
 test/
 .vscode/
+*.dat
+*.log
+*.message
+grpdump.sh
+*.pcm
+test*/
