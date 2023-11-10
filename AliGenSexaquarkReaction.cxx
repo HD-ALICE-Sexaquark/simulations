@@ -121,8 +121,8 @@ void AliGenSexaquarkReaction::InitFermiMomentumInfo() {
     // central value and error obtained from:
     // Povh, Rith, Scholz, Zetsche, Rodejohann. "Particles and Nuclei: An Introduction to the Physical Concepts". 7th edition (Springer,
     // 2015)
-    fFermiMomentum = 0.250; // GeV
-    fFermiMomentumError = 0.005; // GeV
+    fFermiMomentum = 0.250;       // GeV
+    fFermiMomentumError = 0.005;  // GeV
     fFermiMomentumModel = new TF1("Fermi Momentum Model", "[0]*exp(-0.5*((x-[1])/[2])**2) ", fFermiMomentum - 5 * fFermiMomentumError,
                                   fFermiMomentum + 5 * fFermiMomentumError);
     fFermiMomentumModel->SetParameter(0, 1.);
@@ -178,15 +178,15 @@ void AliGenSexaquarkReaction::Generate() {
         ReactionProductsMasses[i] = TDatabasePDG::Instance()->GetParticle(fReactionProductsPDG[i])->Mass();
     }
     // ROOT class to generate n-body event with constant cross-section
-    TGenPhaseSpace Generator;
+    TGenPhaseSpace ThisPhaseSpace;
     // determine momenta of reaction products
     TLorentzVector W = Sexaquark + Nucleon;
-    Generator.SetDecay(W, (Int_t)fReactionProductsPDG.size(), &ReactionProductsMasses[0]);
-    Float_t weight = (Float_t)Generator.Generate();
+    ThisPhaseSpace.SetDecay(W, (Int_t)fReactionProductsPDG.size(), &ReactionProductsMasses[0]);
+    Float_t weight = (Float_t)ThisPhaseSpace.Generate();
 
-    // 5) Set primary vertex
-    TVector3 PrimaryVertex(fOrigin[0], fOrigin[1], fOrigin[2]);
-    Float_t PrimaryTime = fTimeOrigin;
+    // 5) Set primary vertex (taken from AliGenCocktail)
+    TVector3 PrimaryVertex(fVertex[0], fVertex[1], fVertex[2]);  // (in cm)
+    Float_t PrimaryTime = fTime;                                 // (in ns)
 
     // 6) Set secondary vertex
     // let's start the transformation, we already have
@@ -203,8 +203,11 @@ void AliGenSexaquarkReaction::Generate() {
     Float_t Vy_S = Radius3D_S * TMath::Sin(Theta_S) * TMath::Sin(Phi_S);                  // y, in cartesian coordinates
     TVector3 SecondaryVertex(Vx_S, Vy_S, Vz_S);
 
+    // add displacement from PV
+    SecondaryVertex = SecondaryVertex + PrimaryVertex;
+
     Float_t Beta_S = Sexaquark.P() / Sexaquark.E();
-    Float_t SecondaryTime = SecondaryVertex.Mag() / (Beta_S * TMath::Ccgs());
+    Float_t SecondaryTime = (SecondaryVertex.Mag() * TMath::Power(10, -7)) / (Beta_S * TMath::Ccgs());  // (in ns)
 
     /* Output anti-sexaquark and nucleon information into an external CSV file */
 
@@ -236,32 +239,33 @@ void AliGenSexaquarkReaction::Generate() {
     for (Int_t i = 0; i < (Int_t)fReactionProductsPDG.size(); i++) {
 
         // add particle to the stack
-        PushTrack(fTrackIt,                     // done: track final state particles
-                  -1,                           // parent: the idea is that is the sexaquark
-                                                // (for the moment, it's -1 = primary)
-                  fReactionProductsPDG[i],      // pdg of the product particle
-                  Generator.GetDecay(i)->Px(),  // px: Px of the product particle (in GeV/c)
-                  Generator.GetDecay(i)->Py(),  // py: Py of the product particle (in GeV/c)
-                  Generator.GetDecay(i)->Pz(),  // pz: Pz of the product particle (in GeV/c)
-                  Generator.GetDecay(i)->E(),   // E: energy of the product particle (in GeV)
-                  SecondaryVertex.X(),          // vx: x-component of position of interaction vertex (in cm)
-                  SecondaryVertex.Y(),          // vy: y-component of position of interaction vertex (in cm)
-                  SecondaryVertex.Z(),          // vz: z-component of position of interaction vertex (in cm)
-                  SecondaryTime - PrimaryTime,  // vt: time of interaction vertex (in seconds)
-                  0.,                           // polx: x-component of polarisation vector, 0 by default
-                  0.,                           // poly: y-component of polarisation vector, 0 by default
-                  0.,                           // polz: z-component of polarisation vector, 0 by default
-                  kPHInhelastic,                // mech: production mechanism (Hadronic Inelastic Scattering)
-                  TrackCounter,                 // counter of tracks (incremented internally by AliStack)
-                  weight,                       // weight of the event
-                  fCurrentReactionID);          // is: generation status code
-                                                // (0: unstable, 1: stable, 6: from sexaquark)
+        PushTrack(fTrackIt,                          // done: track final state particles
+                  -1,                                // parent: the idea is that is the sexaquark
+                                                     // (for the moment, it's -1 = primary)
+                  fReactionProductsPDG[i],           // pdg of the product particle
+                  ThisPhaseSpace.GetDecay(i)->Px(),  // px: Px of the product particle (in GeV/c)
+                  ThisPhaseSpace.GetDecay(i)->Py(),  // py: Py of the product particle (in GeV/c)
+                  ThisPhaseSpace.GetDecay(i)->Pz(),  // pz: Pz of the product particle (in GeV/c)
+                  ThisPhaseSpace.GetDecay(i)->E(),   // E: energy of the product particle (in GeV)
+                  SecondaryVertex.X(),               // vx: x-component of position of interaction vertex (in cm)
+                  SecondaryVertex.Y(),               // vy: y-component of position of interaction vertex (in cm)
+                  SecondaryVertex.Z(),               // vz: z-component of position of interaction vertex (in cm)
+                  SecondaryTime - PrimaryTime,       // vt: time of interaction vertex (in seconds)
+                  0.,                                // polx: x-component of polarisation vector, 0 by default
+                  0.,                                // poly: y-component of polarisation vector, 0 by default
+                  0.,                                // polz: z-component of polarisation vector, 0 by default
+                  kPHInhelastic,                     // mech: production mechanism (Hadronic Inelastic Scattering)
+                  TrackCounter,                      // counter of tracks (incremented internally by AliStack)
+                  weight,                            // weight of the event
+                  fCurrentReactionID);               // is: generation status code
+                                                     // (0: unstable, 1: stable, 6: from sexaquark)
         //     1 * (TMath::Abs(fReactionProductsPDG[i]) == 211 || TMath::Abs(fReactionProductsPDG[i]) == 2212 ||
         //            TMath::Abs(fReactionProductsPDG[i]) == 321)
 #if VERBOSE_MODE
         // verbose
-        AliInfoF("%3i %12i %12.7f %12.7f %12.7f %12.7f %12.7f", TrackCounter, fReactionProductsPDG[i], Generator.GetDecay(i)->Px(),
-                 Generator.GetDecay(i)->Py(), Generator.GetDecay(i)->Pz(), Generator.GetDecay(i)->E(), Generator.GetDecay(i)->M());
+        AliInfoF("%3i %12i %12.7f %12.7f %12.7f %12.7f %12.7f", TrackCounter, fReactionProductsPDG[i], ThisPhaseSpace.GetDecay(i)->Px(),
+                 ThisPhaseSpace.GetDecay(i)->Py(), ThisPhaseSpace.GetDecay(i)->Pz(), ThisPhaseSpace.GetDecay(i)->E(),
+                 ThisPhaseSpace.GetDecay(i)->M());
 #endif
     }
 

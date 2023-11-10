@@ -2,7 +2,7 @@ AliGenerator *GeneratorCustom(TString opt = "") {
 
     /* Parse option string */
 
-    // `opt` should be formatted as `"<reaction_channel><mass_sexaquark>"`
+    // `opt` should be formatted as "<reaction_channel><mass_sexaquark>"
     // - where <reaction_channel> should be replaced by a single-digit char from 'A' to 'H'
     //   - 'A' : AntiSexaquark + Neutron -> AntiLambda, K0
     //   - 'B' : AntiSexaquark + Neutron -> AntiLambda, K0, Pi-, Pi+
