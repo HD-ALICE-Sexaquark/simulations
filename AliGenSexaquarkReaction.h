@@ -49,7 +49,7 @@ class AliGenSexaquarkReaction : public AliGenerator {
     std::map<Char_t, std::vector<std::vector<Int_t>>> fReactionChannelsMap;  // PDG codes of the products of the current reaction
     Float_t fRadiusMin;                                                      // minimum radius
     Float_t fRadiusMax;                                                      // maximum radius
-    Float_t fStruckNucleonPDG;                                               // PDG code of struck nucleon
+    Int_t fStruckNucleonPDG;                                                 // PDG code of struck nucleon
     std::vector<Int_t> fReactionProductsPDG;                                 // vector of PDG codes of reaction products
 
     /* Fermi Momentum */

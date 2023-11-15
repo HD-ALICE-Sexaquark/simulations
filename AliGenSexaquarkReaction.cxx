@@ -240,13 +240,12 @@ void AliGenSexaquarkReaction::Generate() {
 
         // add particle to the stack
         PushTrack(fTrackIt,                          // done: track final state particles
-                  -1,                                // parent: the idea is that is the sexaquark
-                                                     // (for the moment, it's -1 = primary)
+                  -1,                                // parent: -1 = primary
                   fReactionProductsPDG[i],           // pdg of the product particle
-                  ThisPhaseSpace.GetDecay(i)->Px(),  // px: Px of the product particle (in GeV/c)
-                  ThisPhaseSpace.GetDecay(i)->Py(),  // py: Py of the product particle (in GeV/c)
-                  ThisPhaseSpace.GetDecay(i)->Pz(),  // pz: Pz of the product particle (in GeV/c)
-                  ThisPhaseSpace.GetDecay(i)->E(),   // E: energy of the product particle (in GeV)
+                  ThisPhaseSpace.GetDecay(i)->Px(),  // px of the product particle (in GeV/c)
+                  ThisPhaseSpace.GetDecay(i)->Py(),  // py of the product particle (in GeV/c)
+                  ThisPhaseSpace.GetDecay(i)->Pz(),  // pz of the product particle (in GeV/c)
+                  ThisPhaseSpace.GetDecay(i)->E(),   // energy of the product particle (in GeV)
                   SecondaryVertex.X(),               // vx: x-component of position of interaction vertex (in cm)
                   SecondaryVertex.Y(),               // vy: y-component of position of interaction vertex (in cm)
                   SecondaryVertex.Z(),               // vz: z-component of position of interaction vertex (in cm)
