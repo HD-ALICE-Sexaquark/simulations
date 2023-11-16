@@ -8,7 +8,7 @@
  */
 void parse_kinematics(TString input_filename = "Kinematics.root",  //
                       TString dirName = "Event0",                  //
-                      TString treeName = "TreeK", ) {
+                      TString treeName = "TreeK") {
 
     TFile* file = TFile::Open(input_filename);
     if (!file || file->IsZombie()) {
