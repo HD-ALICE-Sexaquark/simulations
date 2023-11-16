@@ -15,9 +15,23 @@ Additionally, the class must also be added to the `EVGEN/CMakeLists.txt` and `EV
 
 Once the files are added into [**AliRoot**](https://github.com/alisw/AliRoot) and [**AliDPG**](https://github.com/alisw/AliDPG), and these packages (besides [**AliPhysics**](https://github.com/alisw/AliPhysics)) are properly built and loaded, you need to execute this command to send a small production.
 
+(**Note**: it's necessary to use a `DetectorCustom.C`, and the `OCDBsim.root` and `OCDBrec.root` files that correspond to the run number you want, as described below in the **First successful attempt**)
+
 ```
-$ALIDPG_ROOT/bin/aliroot_dpgsim.sh --run 297595 --mode sim --uid 1 --nevents 1 --generator PWGLF:Hijing_Sexaquark:A1.8 --simulation SimulationDefaultIonTail --system Pb-Pb --detector Custom
+$ALIDPG_ROOT/bin/aliroot_dpgsim.sh --run <run_number> --mode sim,rec,qa --uid 1 --nevents <n_events> --generator PWGLF:Hijing_Sexaquark:<reaction_channel><sexaquark_mass> --simulation SimulationDefaultIonTail --system Pb-Pb --detector Custom
 ```
+* `<run_number>` : run number
+* `<n_events>` : number of events
+* `<reaction_channel>` : reaction channel, could be
+   - `A` : AntiSexaquark + Neutron -> AntiLambda, K0
+   - `B` : AntiSexaquark + Neutron -> AntiLambda, K0, Pi-, Pi+
+   - `C` : AntiSexaquark + Neutron -> AntiProton, K0, K0, Pi+
+   - `D` : AntiSexaquark + Proton  -> AntiLambda, K+
+   - `E` : AntiSexaquark + Proton  -> AntiLambda, K+, Pi-, Pi+
+   - `F` : AntiSexaquark + Proton  -> AntiProton, K+, K0, Pi+
+   - `G` : AntiSexaquark + Neutron -> Xi+, Pi-
+   - `H` : AntiSexaquark + Proton  -> AntiProton, K+, K+, Pi0
+* `<sexaquark_mass>` : hypothesized mass of the sexaquark, could go from 1.73 to 2.01 (in GeV/c^2)
 
 ## Testing
 
