@@ -9,11 +9,10 @@
 #include "AliGenerator.h"
 
 /*
- Injector of anti-sexaquark into nucleon interactions
- * with an injected anti-sexaquark under a flat kinematic range
- * interaction vertex under a flat radius range
- * struck nucleon momentum assigned with simple gaussian
-
+ Injector of the products of AntiSexaquark-Nucleon interactions
+ - anti-sexaquark kinematics under a flat distribution
+ - radius of secondary vertex chosen from a flat distribution
+ - struck nucleon momentum assigned with simple gaussian
  -- based on /EVGEN/AliGenBox[.cxx/.h]
  -- author: aborquez@cern.ch
  */
