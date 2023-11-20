@@ -10,19 +10,19 @@ void DetectorCustom() {
   iMAG = 1;
   iPIPE = 1;
   iSHIL = 1;
-  iACORDE = 0;
+  iACORDE = 1;
   iAD = 0;
-  iEMCAL = 0;
-  iFMD = 0;
-  iMUON = 0;
-  iPHOS = 0;
-  iPMD = 0;
-  iZDC = 0;
+  iEMCAL = 1;
+  iFMD = 1;
+  iMUON = 1;
+  iPHOS = 1;
+  iPMD = 1;
+  iZDC = 1;
   iTPC = 1;
   iTOF = 1;
   iITS = 1;
   iTRD = 1;
   iT0 = 1;
   iVZERO = 1;
-  iHMPID = 0;
+  iHMPID = 1;
 }
