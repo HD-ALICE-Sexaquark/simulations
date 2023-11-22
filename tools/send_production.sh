@@ -72,9 +72,6 @@ function prepare_sim_script() {
     # copy env. scripts
     cp ${SIMDIR}/tools/alice_env.sh .
 
-    # copy detector macro
-    cp ${SIMDIR}/DetectorCustom.C .
-
     # copy OCDB files
     cp ${SIMDIR}/tools/${RUN_NUMBER}_OCDBrec.root OCDBrec.root
     cp ${SIMDIR}/tools/${RUN_NUMBER}_OCDBsim.root OCDBsim.root
@@ -91,7 +88,7 @@ function prepare_sim_script() {
     echo ""                                               >> ${run_file}
 
     # prepare final command to run simulations
-    echo '${ALIDPG_ROOT}/bin/aliroot_dpgsim.sh --run '${RUN_NUMBER}' --mode sim,rec,qa --uid 1 --nevents '${N_EVENTS}' --generator PWGLF:Hijing_Sexaquark:'${CHANNEL}${SEXA_MASS}' --simulation SimulationDefaultIonTail --detector Custom --system Pb-Pb' >> ${run_file}
+    echo '${ALIDPG_ROOT}/bin/aliroot_dpgsim.sh --run '${RUN_NUMBER}' --mode sim,rec,qa --uid 1 --nevents '${N_EVENTS}' --generator PWGLF:Hijing_Sexaquark:'${CHANNEL}${SEXA_MASS}' --simulation SimulationDefaultIonTail --detector NoAD --system Pb-Pb' >> ${run_file}
     echo ""                                               >> ${run_file}
 
     # compress GRP/ into a tar (condor being condor...)
@@ -109,13 +106,13 @@ function prepare_job() {
 
     # create job file (within OUTDIR)
     job_file="${1}"
-    echo "executable            = run.sh"                                                    > ${job_file}
-    echo "output                = stdout.log"                                               >> ${job_file}
-    echo "error                 = stderr.log"                                               >> ${job_file}
-    echo "log                   = log.condor"                                               >> ${job_file}
-    echo "should_transfer_files = YES"                                                      >> ${job_file}
-    echo "transfer_input_files  = alice_env.sh,DetectorCustom.C,OCDBrec.root,OCDBsim.root"  >> ${job_file}
-    echo 'requirements          = (Machine == "alice-serv'${SERV}'")'                       >> ${job_file}
+    echo "executable            = run.sh"                                   > ${job_file}
+    echo "output                = stdout.log"                              >> ${job_file}
+    echo "error                 = stderr.log"                              >> ${job_file}
+    echo "log                   = log.condor"                              >> ${job_file}
+    echo "should_transfer_files = YES"                                     >> ${job_file}
+    echo "transfer_input_files  = alice_env.sh,OCDBrec.root,OCDBsim.root"  >> ${job_file}
+    echo 'requirements          = (Machine == "alice-serv'${SERV}'")'      >> ${job_file}
     echo "queue" >> ${job_file}
 }
 
