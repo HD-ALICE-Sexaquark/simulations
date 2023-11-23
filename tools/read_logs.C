@@ -1,4 +1,4 @@
-void read_logs() {
+void read_logs(TString server = "S10") {  // "S10" or "S12" or "S14"
 
     TString pathToA = "../samples/";
     TString line1 = "SIMULATION TIME:";
@@ -16,6 +16,9 @@ void read_logs() {
     Double_t seconds_valid_files = 0.;
 
     while ((objDirA = nextDirA())) {
+
+        TString dirName = objDirA->GetName();
+        if (dirName(dirName.Length() - 3, dirName.Length() - 1) != server) continue;
 
         TString pathToB = pathToA + objDirA->GetName() + "/";
 
@@ -84,9 +87,11 @@ void read_logs() {
             logFile.close();
 
             if (foundLine1 && foundLine2 && foundLine3) {
-                std::cout << "The three lines have been found in file: " << logFilePath << std::endl;
+                // std::cout << "The three lines have been found in file: " << logFilePath << std::endl;
                 n_valid_files += 1.;
                 seconds_valid_files += seconds_total;
+            } else {
+                std::cout << logFilePath << std::endl;
             }
 
         }  // end of loop over dirs B
@@ -98,5 +103,6 @@ void read_logs() {
     std::cout << "seconds_per_event = " << seconds_valid_files / n_valid_files / 10. << std::endl;
     std::cout << "n_desired_events * seconds_per_event = " << 7.4E6 * seconds_valid_files / n_valid_files / 10. << std::endl;
     std::cout << "n_desired_events * days_per_event = " << 7.4E6 * seconds_valid_files / n_valid_files / 10. / 60. / 60. / 24. << std::endl;
-    std::cout << "CPU time = " << 7.4E6 * seconds_valid_files / n_valid_files / 10. / 60. / 60. / 24. / 10000. << " days per 10k CPUs" << std::endl;
+    std::cout << "CPU time = " << 7.4E6 * seconds_valid_files / n_valid_files / 10. / 60. / 60. / 24. / 10000. << " days per 10k CPUs"
+              << std::endl;
 }
