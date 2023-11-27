@@ -8,3 +8,4 @@ grpdump.sh
 *.pcm
 test*/
 samples/
+**/alice_env.sh
