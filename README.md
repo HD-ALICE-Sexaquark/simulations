@@ -35,6 +35,23 @@ $ALIDPG_ROOT/bin/aliroot_dpgsim.sh --run <run_number> --mode sim,rec,qa --uid 1 
 
 ## Testing
 
+* **Testing build on lxplus**
+
+  1. Log into `lxplus.cern.ch`
+  2. Download OCDB file
+     - load recent software (for example, `alienv enter O2Physics/daily-20231205-0100-1`)
+     - download via `alien.py cp alien:///alice/sim/2020/LHC20e3/OCDB/297595/OCDBsim.root file://OCDBsim.root`
+     - download via `alien.py cp alien:///alice/sim/2020/LHC20e3/OCDB/297595/OCDBrec.root file://OCDBrec.root`
+     - get out of env.
+  3. Enter the newly released environment:
+     ```
+     alienv enter AliPhysics/v5-09-54r-01_O2-1,AliDPG/prod-202311-01-1,jemalloc/latest
+     ```
+  4. Execute
+     ```
+     $ALIDPG_ROOT/bin/aliroot_dpgsim.sh --run 297595 --mode sim,rec,qa --uid 1 --nevents 1 --generator PWGLF:Hijing_Sexaquark:A1.8 --simulation SimulationDefaultIonTail --system Pb-Pb --detector NoAD
+     ```
+
 * **First successful attempt**
 
   1. Install latest tags of every package ([**AliRoot**](https://github.com/alisw/AliRoot), [**AliPhysics**](https://github.com/alisw/AliPhysics), [**AliDPG**](https://github.com/alisw/AliDPG), [**alidist**](https://github.com/alisw/alidist)) and add the generators as described above.
