@@ -61,10 +61,15 @@ if [[ -z ${ALIDPG_ROOT:-} ]]; then echo "error: missing env var ALIDPG_ROOT"; ex
 if [[ -z ${FSSR_ROOT_DIR:-} ]]; then echo "error: missing env var FSSR_ROOT_DIR"; exit 1; fi
 if [[ -z ${FSSR_SLURM_DIR:-} ]]; then echo "error: missing env var FSSR_SLURM_DIR"; exit 1; fi
 if [[ -z ${FSSR_OUTPUT_DIR:-} ]]; then echo "error: missing env var FSSR_OUTPUT_DIR"; exit 1; fi
+if [[ -z ${LOCAL_OCDB_DIR:-} ]]; then echo "error: missing env var LOCAL_OCDB_DIR"; exit 1; fi
 
 # command-line arguments
 if [[ $# -ne 6 ]]; then print_usage; exit 1; fi
 process_args "$@"
+
+# validate input args
+[[ " A D E H " == *" ${reaction_channel} "* ]] || { echo "error: invalid reaction channel"; exit 1; }
+[[ " 1.73 1.8 1.87 1.94 2.01 " == *" ${sexaquark_mass} "* ]] || { echo "error: invalid sexaquark mass"; exit 1; }
 
 # define strings (NOTE: not arrays, because Slurm)
 export RUN_NUMBERS_STR

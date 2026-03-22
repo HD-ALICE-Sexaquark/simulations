@@ -12,6 +12,6 @@ if [[ $# -ne 2 ]]; then echo "usage: $0 <path aliroot> <path alidpg>"; exit 1; f
 aliroot_path=$1
 alidpg_path=$2
 
-cp -v ${FSSR_ROOT_DIR}/AliGenSexaquarkReaction.cxx ${aliroot_path}/EVGEN/
-cp -v ${FSSR_ROOT_DIR}/AliGenSexaquarkReaction.h ${aliroot_path}/EVGEN/
-cp -v ${FSSR_ROOT_DIR}/Hijing_Sexaquark.C ${alidpg_path}/MC/CustomGenerators/PWGLF/
+cp -v "${FSSR_ROOT_DIR}/AliGenSexaquarkReaction.cxx" "${aliroot_path}/EVGEN/"
+cp -v "${FSSR_ROOT_DIR}/AliGenSexaquarkReaction.h" "${aliroot_path}/EVGEN/"
+cp -v "${FSSR_ROOT_DIR}/Hijing_Sexaquark.C" "${alidpg_path}/MC/CustomGenerators/PWGLF/"

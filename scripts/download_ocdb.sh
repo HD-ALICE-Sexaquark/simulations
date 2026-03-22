@@ -6,9 +6,13 @@
 
 set -euo pipefail
 
-if [[ -z ${FSSR_ROOT_DIR:-} ]]; then echo "error: missing env var FSSR_ROOT_DIR"; exit 1; fi
-if [[ $# -ne 1 ]]; then echo "usage: $0 <run_numbers_file>"; exit 1; fi
+if [[ -z ${ALIPHYSICS_VERSION:-} ]]; then echo "error: missing env var ALIPHYSICS_VERSION"; exit 1; fi
+if [[ -z ${ALIROOT_VERSION:-} ]]; then echo "error: missing env var ALIROOT_VERSION"; exit 1; fi
+if [[ -z ${ALIDPG_VERSION:-} ]]; then echo "error: missing env var ALIDPG_VERSION"; exit 1; fi
+
+if [[ $# -ne 2 ]]; then echo "usage: $0 <run numbers file> <target dir>"; exit 1; fi
 run_numbers_file=$1
+target_ocdb_dir=$2
 
 prod_equiv="LHC20e3"
 prod_year=2020
@@ -16,18 +20,18 @@ if [[ $(basename "${run_numbers_file}") == "LHC15o_pass2.txt" ]]; then
     prod_equiv="LHC20j6"
 fi
 
-mkdir -p "${FSSR_ROOT_DIR}/ocdb"
+mkdir -p "${target_ocdb_dir}"
 
 remote_ocdb_path="/alice/sim/${prod_year}/${prod_equiv}/OCDB"
 
 # loop over run numbers
 while read -r run_number; do
-    mkdir -p "${FSSR_ROOT_DIR}/ocdb/${prod_equiv}/${run_number}"
+    mkdir -p "${target_ocdb_dir}/${prod_equiv}/${run_number}"
 
     for type in "sim" "rec"; do
 
         remote_file=${remote_ocdb_path}/${run_number}/OCDB${type}.root
-        local_file=${FSSR_ROOT_DIR}/ocdb/${prod_equiv}/${run_number}/OCDB${type}.root
+        local_file=${target_ocdb_dir}/${prod_equiv}/${run_number}/OCDB${type}.root
 
         if ! alien.py ls "${remote_file}" &>/dev/null; then
             echo "warning: remote file not found: ${remote_file}, skipping"

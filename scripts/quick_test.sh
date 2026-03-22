@@ -6,8 +6,9 @@
 
 set -euo pipefail
 
-if [[ -z ${ALIDPG_ROOT} ]]; then echo "error: missing env. var. ALIDPG_ROOT"; exit 1; fi
-if [[ -z ${FSSR_ROOT_DIR} ]]; then echo "error: missing env. var. FSSR_ROOT_DIR"; exit 1; fi
+if [[ -z ${ALIDPG_ROOT:-} ]]; then echo "error: missing env. var. ALIDPG_ROOT"; exit 1; fi
+if [[ -z ${FSSR_ROOT_DIR:-} ]]; then echo "error: missing env. var. FSSR_ROOT_DIR"; exit 1; fi
+if [[ -z ${LOCAL_OCDB_DIR:-} ]]; then echo "error: missing env. var. LOCAL_OCDB_DIR"; exit 1; fi
 
 if [[ $# -ne 1 ]]; then echo "usage: $0 <run number>"; exit 1; fi
 
@@ -32,8 +33,8 @@ mkdir -p "${output_dir}"
 
 cd "${output_dir}"
 ln -sf "${FSSR_ROOT_DIR}/DetectorCustom.C" .
-ln -sf "${FSSR_ROOT_DIR}/ocdb/${bkg_mc_prod}/${run_number}/OCDBsim.root" .
-ln -sf "${FSSR_ROOT_DIR}/ocdb/${bkg_mc_prod}/${run_number}/OCDBrec.root" .
+ln -sf "${LOCAL_OCDB_DIR}/${bkg_mc_prod}/${run_number}/OCDBsim.root" .
+ln -sf "${LOCAL_OCDB_DIR}/${bkg_mc_prod}/${run_number}/OCDBrec.root" .
 
 # set env vars for metadata #
 

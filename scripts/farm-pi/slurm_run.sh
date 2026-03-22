@@ -2,7 +2,7 @@
 
 # `slurm_run.sh`
 # ==============
-# !! Don't execute this script directly, it is meant to be used by `farm-pi/slurm_submit.sh` !!
+# NOTE: don't execute this script directly, it is meant to be used by `farm-pi/slurm_submit.sh`
 
 #SBATCH --partition=main
 #SBATCH --time=1:00:00
@@ -16,6 +16,7 @@ if [[ -z ${ALIDPG_ROOT:-} ]]; then echo "error: missing env var ALIDPG_ROOT"; ex
 if [[ -z ${FSSR_ROOT_DIR:-} ]]; then echo "error: missing env var FSSR_ROOT_DIR"; exit 1; fi
 if [[ -z ${FSSR_OUTPUT_DIR:-} ]]; then echo "error: missing env var FSSR_OUTPUT_DIR"; exit 1; fi
 if [[ -z ${FSSR_SLURM_DIR:-} ]]; then echo "error: missing env var FSSR_SLURM_DIR"; exit 1; fi
+if [[ -z ${LOCAL_OCDB_DIR:-} ]]; then echo "error: missing env var LOCAL_OCDB_DIR"; exit 1; fi
 # -- per run number options
 if [[ -z ${RUN_NUMBERS_STR:-} ]]; then echo "error: missing env var RUN_NUMBERS_STR"; exit 1; fi
 if [[ -z ${DIR_NUMBERS_STR:-} ]]; then echo "error: missing env var DIR_NUMBERS_STR"; exit 1; fi
@@ -57,8 +58,8 @@ mkdir -p "${output_dir}"
 cd "${output_dir}"
 
 ln -sf "${FSSR_ROOT_DIR}/DetectorCustom.C" .
-ln -sf "${FSSR_ROOT_DIR}/ocdb/${bkg_mc_prod}/${run_number}/OCDBsim.root" .
-ln -sf "${FSSR_ROOT_DIR}/ocdb/${bkg_mc_prod}/${run_number}/OCDBrec.root" .
+ln -sf "${LOCAL_OCDB_DIR}/${bkg_mc_prod}/${run_number}/OCDBsim.root" .
+ln -sf "${LOCAL_OCDB_DIR}/${bkg_mc_prod}/${run_number}/OCDBrec.root" .
 
 # log hack (https://unix.stackexchange.com/a/585453)
 tmp_logfile=${FSSR_SLURM_DIR}/tmp/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log # = ${FSSR_SLURM_DIR}/tmp/%A_%a.log
@@ -105,7 +106,7 @@ ${ALIDPG_ROOT}/bin/aliroot_dpgsim.sh --run "${run_number}" \
 rm -v DetectorCustom.C OCDBsim.root OCDBrec.root
 
 # remove intermediate files
-rm -rfv GRP/ AliESDfriends.root geometry.root ./*.dat grpdump.sh Merged.QA.Data.root QA* ./*.log Run*.root TOFQA.root Trigger.root
+rm -rfv GRP/ AliESDfriends.root geometry.root ./*.dat grpdump.sh Merged.QA.Data.root QA* Run*.root TOFQA.root Trigger.root rec.log simwatch.log recwatch.log
 
 # end of log hack
 rm "${tmp_logfile}"
