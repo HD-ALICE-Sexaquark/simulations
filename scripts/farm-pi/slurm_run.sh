@@ -97,7 +97,7 @@ ${ALIDPG_ROOT}/bin/aliroot_dpgsim.sh --run "${run_number}" \
                                      --mode sim,rec \
                                      --uid "${SLURM_ARRAY_JOB_ID}${SLURM_ARRAY_TASK_ID}" \
                                      --nevents 10 \
-                                     --generator "PWGLF:Hijing_Sexaquark:${r_channel}:${s_mass}" \
+                                     --generator "PWGLF:Hijing_Sexaquark:${r_channel}${s_mass}" \
                                      --simulation SimulationDefaultIonTail \
                                      --system Pb-Pb \
                                      --detector Custom

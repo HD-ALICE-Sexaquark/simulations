@@ -1,5 +1,8 @@
 #include <TChain.h>
 
+#include <Math/Vector4D.h>
+namespace RMath = ROOT::Math;
+
 #include <AliAnalysisManager.h>
 #include <AliAnalysisUtils.h>
 #include <AliESDInputHandler.h>
@@ -35,6 +38,11 @@ AliAnalysisTaskSexaReactionQA::AliAnalysisTaskSexaReactionQA(const char* name)
       fHist_Resolution_PV_X{nullptr},
       fHist_Resolution_PV_Y{nullptr},
       fHist_Resolution_PV_Z{nullptr},
+      fHist_TruePions_NSigmaPion{nullptr},
+      fHist_TrueKaons_NSigmaKaon{nullptr},
+      fHist_TrueProtons_NSigmaProton{nullptr},
+      fHist_MC_AntiSexaquark_Mass{nullptr},
+      fHist_MC_AntiSexaquark_Pt{nullptr},
       //
       fOutputTree{nullptr},
       //
@@ -165,8 +173,14 @@ void AliAnalysisTaskSexaReactionQA::UserCreateOutputObjects() {
     fOutputHists->Add(fHist_Resolution_PV_Z);
     fHist_TruePions_NSigmaPion = new TH1D("TruePions_NSigmaPion", ";TruePions_NSigmaPion;Counts", 100, -10., 10.);
     fOutputHists->Add(fHist_TruePions_NSigmaPion);
+    fHist_TrueKaons_NSigmaKaon = new TH1D("TrueKaons_NSigmaKaon", ";TrueKaons_NSigmaKaon;Counts", 100, -10., 10.);
+    fOutputHists->Add(fHist_TrueKaons_NSigmaKaon);
     fHist_TrueProtons_NSigmaProton = new TH1D("TrueProtons_NSigmaProton", ";TrueProtons_NSigmaProton;Counts", 100, -10., 10.);
     fOutputHists->Add(fHist_TrueProtons_NSigmaProton);
+    fHist_MC_AntiSexaquark_Mass = new TH1D("MC_AntiSexaquark_Mass", ";MC_AntiSexaquark_Mass;Counts", 32, 1.59, 2.15);
+    fOutputHists->Add(fHist_MC_AntiSexaquark_Mass);
+    fHist_MC_AntiSexaquark_Pt = new TH1D("MC_AntiSexaquark_Pt", ";MC_AntiSexaquark_Pt;Counts", 100, 0., 10.);
+    fOutputHists->Add(fHist_MC_AntiSexaquark_Pt);
 
     // Prepare output tree //
 
@@ -390,6 +404,14 @@ void AliAnalysisTaskSexaReactionQA::ProcessMCParticles() {
         tMC_IsPrimary.emplace_back(static_cast<char>(mcPart->IsPhysicalPrimary()));
         tMC_IsSecFromMat.emplace_back(static_cast<char>(mcPart->IsSecondaryFromMaterial()));
         tMC_IsSecFromWeak.emplace_back(static_cast<char>(mcPart->IsSecondaryFromWeakDecay()));
+
+        // Fill Histograms //
+
+        if (mcPart->PdgCode() == -2112 && mcPart->MCStatusCode() >= 600 && mcPart->MCStatusCode() < 700 && mcPart->GetMother() == -1) {
+            RMath::PxPyPzEVector anti_sexaquark(mcPart->Px(), mcPart->Py(), mcPart->Pz(), mcPart->E());
+            fHist_MC_AntiSexaquark_Mass->Fill(anti_sexaquark.M());
+            fHist_MC_AntiSexaquark_Pt->Fill(anti_sexaquark.Pt());
+        }
     }  // end of loop over MC particles
 }
 
@@ -540,6 +562,7 @@ void AliAnalysisTaskSexaReactionQA::ProcessTracks() {
         auto* mcPart = dynamic_cast<AliMCParticle*>(fMC->GetTrack(mc_idx));
 
         if (std::abs(mcPart->PdgCode()) == 211) fHist_TruePions_NSigmaPion->Fill(n_sigmas_pion);
+        if (std::abs(mcPart->PdgCode()) == 321) fHist_TrueKaons_NSigmaKaon->Fill(n_sigmas_kaon);
         if (std::abs(mcPart->PdgCode()) == 2212) fHist_TrueProtons_NSigmaProton->Fill(n_sigmas_proton);
     }  // end of loop over tracks
 }

@@ -75,8 +75,11 @@ class AliAnalysisTaskSexaReactionQA final : public AliAnalysisTaskSE {
     TH1D* fHist_Resolution_PV_X;           //!
     TH1D* fHist_Resolution_PV_Y;           //!
     TH1D* fHist_Resolution_PV_Z;           //!
-    TH1D* fHist_TrueProtons_NSigmaProton;  //!
     TH1D* fHist_TruePions_NSigmaPion;      //!
+    TH1D* fHist_TrueKaons_NSigmaKaon;      //!
+    TH1D* fHist_TrueProtons_NSigmaProton;  //!
+    TH1D* fHist_MC_AntiSexaquark_Mass;     //!
+    TH1D* fHist_MC_AntiSexaquark_Pt;       //!
 
     // Trees //
     TTree* fOutputTree;  //!

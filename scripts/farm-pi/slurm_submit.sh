@@ -7,6 +7,7 @@
 # - ${FSSR_OUTPUT_DIR}/<new_mc_prod_name>/<r_channel><s_mass>/<run_number>/<dir_number>/AliESDs.root
 # - ${FSSR_OUTPUT_DIR}/<new_mc_prod_name>/<r_channel><s_mass>/<run_number>/<dir_number>/galice.root
 # - ${FSSR_OUTPUT_DIR}/<new_mc_prod_name>/<r_channel><s_mass>/<run_number>/<dir_number>/Kinematics.root
+# - ${FSSR_OUTPUT_DIR}/<new_mc_prod_name>/<r_channel><s_mass>/<run_number>/<dir_number>/sim.log
 # Log files will be:
 # - ${FSSR_SLURM_DIR}/<new_mc_prod_name>_<r_channel><s_mass>/<run_number>_<dir_number>.log
 
@@ -14,7 +15,7 @@ set -euo pipefail
 
 # hardcoded options #
 
-MAX_PARALLEL_JOBS=120
+MAX_PARALLEL_JOBS=96
 N_DIR_NUMBERS=20
 
 # functions #

@@ -1,6 +1,6 @@
 AliGenerator *GeneratorCustom(TString opt = "") {
 
-    // `opt` should be formatted as "<reaction_channel>:<mass_sexaquark>"
+    // `opt` should be formatted as "<reaction_channel><mass_sexaquark>"
     // where:
     // - <reaction_channel> should be replaced by a single-digit char from 'A' to 'H'
     //   - 'A' : AntiSexaquark + Neutron -> AntiLambda, K0
@@ -8,7 +8,7 @@ AliGenerator *GeneratorCustom(TString opt = "") {
     //   - 'H' : AntiSexaquark + Proton  -> AntiProton, K+, K+, Pi0
     // - <mass_sexaquark> corresponds to the mass of the injected anti-sexaquark
     //   - we're interested in: 1.73, 1.8, 1.87, 1.94, 2.01
-    // examples of valid `opt`: "A:1.8", "D:1.73", "H:2.01", etc.
+    // examples of valid `opt`: "A1.8", "D1.73", "H2.01", etc.
 
     // Parse option string //
 
@@ -16,14 +16,9 @@ AliGenerator *GeneratorCustom(TString opt = "") {
     char char_r_channel = 'A';
     double m_sexaquark = 1.8;  // (GeV/c^2)
 
-    // -- retrieve options from separated by ':'
     if (opt != "") {
-        TObjArray *tokens = opt.Tokenize(":");
-        if (tokens->GetEntries() == 2) {
-            char_r_channel = ((TObjString *)tokens->At(0))->GetString()[0];
-            m_sexaquark = ((TObjString *)tokens->At(1))->GetString().Atof();
-        }
-        delete tokens;
+        char_r_channel = opt(0);
+        m_sexaquark = ((TString)opt(1, opt.Length())).Atof();
     }
     Sexaquark::EReactionChannel r_channel = Sexaquark::ReactionChannelFromChar(char_r_channel);
 
