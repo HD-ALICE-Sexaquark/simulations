@@ -1,115 +1,64 @@
-#include <fstream>
-#include <set>
-#include <vector>
+#include <cmath>
 
-#include "TDatabasePDG.h"
-#include "TF1.h"
-#include "TGenPhaseSpace.h"
-#include "TLorentzVector.h"
-#include "TMath.h"
-#include "TPDGCode.h"
+#include <TGenPhaseSpace.h>
+#include <TLorentzVector.h>
+#include <TMath.h>
 
-#include "AliConst.h"
+#include <Math/Functor.h>
+#include <Math/Integrator.h>
+namespace RMath = ROOT::Math;
+
 #include "AliGenEventHeader.h"
 #include "AliGenSexaquarkReaction.h"
 #include "AliLog.h"
-#include "AliPDG.h"
 #include "AliRun.h"
 
 #define VERBOSE_MODE 0
 
 ClassImp(AliGenSexaquarkReaction);  // integrate class for interactive use in ROOT
 
-/*
- Default constructor
- - Set default kinematic ranges for injected anti-sexaquark
- - Set default radius range for secondary vertex
- - Struck nucleon momentum assigned with simple gaussian
- - Sexaquark mass, reaction channel and number of reactions will be provided in SetDefaultValues()
- */
-AliGenSexaquarkReaction::AliGenSexaquarkReaction()
-    : AliGenerator(),
-      fReactionChannelsMap(),
-      fRadiusMin(0),
-      fRadiusMax(0),
-      fStruckNucleonPDG(0),
-      fReactionProductsPDG(0),
-      fFermiMomentum(0),
-      fFermiMomentumError(0),
-      fFermiMomentumModel(0),
-      fNReactions(0),
-      fNReactionProducts(0),
-      fSexaquarkMass(0),
-      fReactionChannel(0) {
+// Set default kinematic ranges for injected anti-sexaquark.
+// Set default radius range for secondary vertex.
+// Struck nucleon momentum assigned with simple gaussian.
+AliGenSexaquarkReaction::AliGenSexaquarkReaction(int n_reactions, double sexaquark_mass, Sexaquark::EReactionChannel reaction_channel)
+    : AliGenerator{},
+      fRndm{0},
+      fBlastwaveFunctions{},
+      fReactionProducts_Mass{},     // set in `CacheReactionInfo`
+      fReactionProducts_PdgCode{},  // set in `CacheReactionInfo`
+      fStruckNucleon_Mass{},        // set in `CacheReactionInfo`
+      fRadiusMin{},
+      fRadiusMax{},
+      fFermiMomentum{},
+      fFermiMomentumSigma{},
+      fSexaquarkMass{sexaquark_mass},
+      fStruckNucleon_PdgCode{},  // set in `CacheReactionInfo`
+      fN_ReactionProducts{},     // set in `CacheReactionInfo`
+      fReactionsPerTrigger{n_reactions},
+      fReactionChannel{reaction_channel} {
 
     SetDefaultNameTitle();
-
-    InitReactionsInfo();
-    InitFermiMomentumInfo();
-
     SetDefaultRanges();
-    SetDefaultValues();
 
-    fStruckNucleonPDG = fReactionChannelsMap[fReactionChannel][0][0];
-    fReactionProductsPDG = fReactionChannelsMap[fReactionChannel][1];
-    fNReactionProducts = (Int_t)fReactionProductsPDG.size();
+    InitFermiMomentumInfo();
+    CacheReactionInfo();
+    InitBlastwaveFunctions();
 
-    SetNumberParticles(fNReactions * fNReactionProducts);
+    SetNumberParticles(fReactionsPerTrigger * (2 + fN_ReactionProducts));
     AliConfig::Instance()->Add(this);
 }
 
-/*
- Default constructor
- - Set default kinematic ranges for injected anti-sexaquark
- - Set default radius range for secondary vertex
- - Struck nucleon momentum assigned with simple gaussian
- */
-AliGenSexaquarkReaction::AliGenSexaquarkReaction(Int_t n_reactions, Float_t sexaquark_mass, Char_t reaction_channel)
-    : AliGenerator(),
-      fReactionChannelsMap(),
-      fRadiusMin(0),
-      fRadiusMax(0),
-      fStruckNucleonPDG(0),
-      fReactionProductsPDG(0),
-      fFermiMomentum(0),
-      fFermiMomentumError(0),
-      fFermiMomentumModel(0),
-      fNReactions(n_reactions),
-      fNReactionProducts(0),
-      fSexaquarkMass(sexaquark_mass),
-      fReactionChannel(reaction_channel) {
+// Default constructor.
+AliGenSexaquarkReaction::AliGenSexaquarkReaction()  //
+    : AliGenSexaquarkReaction{1, 1.8, Sexaquark::EReactionChannel::kA} {}
 
-    SetDefaultNameTitle();
-
-    InitReactionsInfo();
-    InitFermiMomentumInfo();
-
-    SetDefaultRanges();
-
-    fStruckNucleonPDG = fReactionChannelsMap[fReactionChannel][0][0];
-    fReactionProductsPDG = fReactionChannelsMap[fReactionChannel][1];
-    fNReactionProducts = (Int_t)fReactionProductsPDG.size();
-
-    SetNumberParticles(fNReactions * fNReactionProducts);
-    AliConfig::Instance()->Add(this);
-}
-
-/*
- Default destructor
-*/
-AliGenSexaquarkReaction::~AliGenSexaquarkReaction() { delete fFermiMomentumModel; }
-
-/*
- Set default name and title
- */
+// Set default name and title.
 void AliGenSexaquarkReaction::SetDefaultNameTitle() {
     fName = "AliGenSexaquarkReaction";
     fTitle = "Generator of AntiSexaquark-Nucleon Reactions";
 }
 
-/*
- Initialization of the generator
-*/
+// Initialization of the generator.
 void AliGenSexaquarkReaction::Init() {
 
     // check consistency of selected ranges
@@ -119,8 +68,7 @@ void AliGenSexaquarkReaction::Init() {
     if ((!TestBit(kPtRange)) && (!TestBit(kMomentumRange))) {
         Fatal("Init", "You should set either the momentum or the pt range!\n");
     }
-    if ((TestBit(kYRange) && TestBit(kThetaRange)) || (TestBit(kYRange) && TestBit(kEtaRange)) ||
-        (TestBit(kEtaRange) && TestBit(kThetaRange))) {
+    if ((TestBit(kYRange) && TestBit(kThetaRange)) || (TestBit(kYRange) && TestBit(kEtaRange)) || (TestBit(kEtaRange) && TestBit(kThetaRange))) {
         Fatal("Init", "You should only set the range of one of these variables: y, eta or theta\n");
     }
     if ((!TestBit(kYRange)) && (!TestBit(kEtaRange)) && (!TestBit(kThetaRange))) {
@@ -130,129 +78,87 @@ void AliGenSexaquarkReaction::Init() {
     PrintParameters();
 }
 
-/*
- Set default sexaquark mass, reaction channel and number of reactions
- */
-void AliGenSexaquarkReaction::SetDefaultValues() {
-    fSexaquarkMass = 1.8;  // GeV/c^2
-    fReactionChannel = 'A';
-    fNReactions = 1;
+// Derive information from input `fReactionChannel`.
+void AliGenSexaquarkReaction::CacheReactionInfo() {
+
+    // -- struck nucleon
+    fStruckNucleon_Mass = Sexaquark::Particle_Mass[Sexaquark::RChannel_NucleonPID[fReactionChannel]];
+    fStruckNucleon_PdgCode = Sexaquark::Particle_PdgCode[Sexaquark::RChannel_NucleonPID[fReactionChannel]];
+
+    // -- reaction products
+    for (auto p : Sexaquark::RChannel_ProductsPID[fReactionChannel]) {
+        fReactionProducts_PdgCode.push_back(Sexaquark::Particle_PdgCode[p]);
+        fReactionProducts_Mass.push_back(Sexaquark::Particle_Mass[p]);
+    }
+    fN_ReactionProducts = static_cast<int>(fReactionProducts_PdgCode.size());
 }
 
-/*
- Set default kinematic ranges for the anti-sexaquark, and radius range for the interaction vertex
- */
+// Set default kinematic ranges for the anti-sexaquark, and radius range for the interaction vertex.
 void AliGenSexaquarkReaction::SetDefaultRanges() {
-    // anti-sexaquark
-    SetPtRange(0., 5.);     // GeV/c
-    SetPhiRange(0., 360.);  // degrees
+
+    // -- anti-sexaquark
+    SetPtRange(0., 10.);    // (GeV/c)
+    SetPhiRange(0., 360.);  // (degrees) // NOTE: get converted into radians here)
     SetYRange(-0.8, 0.8);
-    // interaction vertex
+
+    // -- interaction vertex
     SetRadiusRange(5., 180.);  // cm
 }
 
-/*
- Initialize reaction channels map of vectors
- */
-void AliGenSexaquarkReaction::InitReactionsInfo() {
-    fReactionChannelsMap['A'] = {{2112}, {-3122, 310}};             // AntiS + Neutron -> AntiLambda, K0
-    fReactionChannelsMap['B'] = {{2112}, {-3122, 310, -211, 211}};  // AntiS + Neutron -> AntiLambda, K0, Pi-, Pi+
-    fReactionChannelsMap['C'] = {{2112}, {-2212, 310, 310, 211}};   // AntiS + Neutron -> AntiProton, K0, K0, Pi+
-    fReactionChannelsMap['D'] = {{2212}, {-3122, 321}};             // AntiS + Proton -> AntiLambda, K+
-    fReactionChannelsMap['E'] = {{2212}, {-3122, 321, -211, 211}};  // AntiS + Proton -> AntiLambda, K+, Pi-, Pi+
-    fReactionChannelsMap['F'] = {{2212}, {-2212, 321, 310, 211}};   // AntiS + Proton -> AntiProton, K+, K0, Pi+
-    fReactionChannelsMap['G'] = {{2112}, {-3312, -211}};            // AntiS + Neutron -> Xi+, Pi-
-    fReactionChannelsMap['H'] = {{2212}, {-2212, 321, 321, 111}};   // AntiS + Proton -> AntiProton, K+, K+, Pi0
-}
-
-/*
- Initialise the Fermi momentum information
- */
+// Initialise the Fermi momentum information.
 void AliGenSexaquarkReaction::InitFermiMomentumInfo() {
-    // define central value and error, obtained from:
-    // -- Povh, Rith, Scholz, Zetsche, Rodejohann.
-    //    "Particles and Nuclei: An Introduction to the Physical Concepts".
-    //    (Springer, 2015, 7th edition)
-    fFermiMomentum = 0.250;       // GeV
-    fFermiMomentumError = 0.005;  // GeV
-
-    // define function
-    fFermiMomentumModel = new TF1("Fermi Momentum Model", "[0]*exp(-0.5*((x-[1])/[2])**2) ",  //
-                                  fFermiMomentum - 5 * fFermiMomentumError, fFermiMomentum + 5 * fFermiMomentumError);
-    fFermiMomentumModel->SetParameter(0, 1.);
-    fFermiMomentumModel->SetParameter(1, fFermiMomentum);
-    fFermiMomentumModel->SetParameter(2, fFermiMomentumError);
+    fFermiMomentum = 0.250;  // (GeV/c)
+    fFermiMomentumSigma = fFermiMomentum / std::sqrt(5.);
 }
 
-/*
- Generate n_triggers
- */
-void AliGenSexaquarkReaction::GenerateN(Int_t n_triggers) {
+void AliGenSexaquarkReaction::InitBlastwaveFunctions() {
+    fBlastwaveFunctions.reserve(Sexaquark::kNCentralityClasses);
+    for (size_t cc = 0; cc < Sexaquark::kNCentralityClasses; ++cc) {
+        auto fcn = std::make_unique<TF1>(TString::Format("Fcn_BlastWave_%.2f_%s", fSexaquarkMass, Sexaquark::Centrality_Str[cc].data()),  //
+                                         BlastWaveFcn, fPtMin, fPtMax, 4);
+        fcn->SetParameter(0, fSexaquarkMass);
+        fcn->SetParameter(1, Sexaquark::KineticFOTemp[cc]);
+        fcn->SetParameter(2, Sexaquark::AvgBetaTemp[cc]);
+        fcn->SetParameter(3, Sexaquark::RadialFlowPower[cc]);
+        fBlastwaveFunctions.push_back(std::move(fcn));
+    }
+}
 
-    // prepare random numbers
-    GetRandom()->SetSeed(0);
-    Float_t fRandom[4];
+// Generate n_triggers.
+void AliGenSexaquarkReaction::GenerateN(int n_triggers) {
 
-    /* Declaration of variables */
+    TGenPhaseSpace ThisPhaseSpace;
+    int mult = n_triggers * fReactionsPerTrigger;
 
-    // anti-sexaquark
-    Float_t Pt_S, Px_S, Py_S, Pl_S;
-    Float_t Y_S, Phi_S;
-    Float_t Mt_S, E_S;
-    TLorentzVector Sexaquark;
-
-    // struck nucleon
-    Float_t Px_N, Py_N, Pz_N;
-    Float_t M_N, E_N;
-    TLorentzVector Nucleon;
-
-    // reaction
-    Double_t ReactionProductsMasses[fNReactionProducts];
-    TGenPhaseSpace ThisPhaseSpace;  // generator of a single n-body reaction with constant cross-section
-    TLorentzVector W;
-    Float_t weight;
-
-    // secondary vertex
-    Float_t Radius_S, Theta_S, Radius3D_S;
-    Float_t Vx_S, Vy_S, Vz_S;
-    Float_t Beta_S, SecondaryTime;
-    TVector3 SecondaryVertex;
-
-    // bookkeeping
-    Int_t TrackCounter;
-    Int_t ReactionID;
-
-    /* Definitions */
-
-    // primary vertex (taken from AliGenCocktail)
-    TVector3 PrimaryVertex(fVertex[0], fVertex[1], fVertex[2]);  // (in cm)
-    Float_t PrimaryTime = fTime;                                 // (in ns)
-
-    Int_t mult = n_triggers * fNReactions;
-
-    for (Int_t i = 0; i < mult; i++) {
-
-        // update reaction ID
-        ReactionID = 600 + i;
+    for (int i = 0; i < mult; ++i) {
 
 #if VERBOSE_MODE
         AliInfoF("\tSummary of Reaction #%i", i);
         AliInfo("");
 #endif
 
-        // get new random numbers
-        Rndm(fRandom, 4);
-
         // 1) Prepare anti-sexaquark
-        Pt_S = fPtMin + fRandom[0] * (fPtMax - fPtMin);
-        Mt_S = TMath::Sqrt(fSexaquarkMass * fSexaquarkMass + Pt_S * Pt_S);  // transverse mass (derived from inv. mass and Pt)
-        Y_S = fYMin + fRandom[1] * (fYMax - fYMin);                         // rapidity (uniform distribution)
-        Phi_S = fPhiMin + fRandom[2] * (fPhiMax - fPhiMin);                 // azimuthal angle (uniform distribution) (in radians)
-        Px_S = Pt_S * TMath::Cos(Phi_S);                                    // Px
-        Py_S = Pt_S * TMath::Sin(Phi_S);                                    // Py
-        Pl_S = Mt_S * TMath::SinH(Y_S);                                     // longitudinal momentum = Pz (derived from trans. mass and Y)
-        E_S = Mt_S * TMath::CosH(Y_S);                                      // energy (derived from trans. mass and Y)
-        Sexaquark.SetPxPyPzE(Px_S, Py_S, Pl_S, E_S);
+        int ReactionID = Sexaquark::ReactionID_Offset + i;
+        // -- assign random centrality, hoping the distribution averages out
+        //    NOTE: width-weighted draw
+        double fake_centrality = fRndm.Uniform(90.);
+        int centrality_bin = 0;
+        if (fake_centrality < 5.) {
+            centrality_bin = 0;
+        } else if (fake_centrality < 10.) {
+            centrality_bin = 1;
+        } else {
+            centrality_bin = 2 + static_cast<int>((fake_centrality - 10.) / 10.);
+        }
+        double Pt_S = fBlastwaveFunctions[centrality_bin]->GetRandom(&fRndm);
+        double Mt_S = std::sqrt(fSexaquarkMass * fSexaquarkMass + Pt_S * Pt_S);  // transverse mass (derived from inv. mass and Pt)
+        double Y_S = fYMin + fRndm.Rndm() * (fYMax - fYMin);                     // rapidity (uniform distribution)
+        double Phi_S = fPhiMin + fRndm.Rndm() * (fPhiMax - fPhiMin);             // azimuthal angle (uniform distribution) (in radians)
+        double Px_S = Pt_S * std::cos(Phi_S);
+        double Py_S = Pt_S * std::sin(Phi_S);
+        double Pl_S = Mt_S * std::sinh(Y_S);  // longitudinal momentum = Pz (derived from trans. mass and Y)
+        double E_S = Mt_S * std::cosh(Y_S);   // energy (derived from trans. mass and Y)
+        TLorentzVector Sexaquark(Px_S, Py_S, Pl_S, E_S);
 
 #if VERBOSE_MODE
         AliInfo("Generated AntiSexaquark:");
@@ -264,64 +170,79 @@ void AliGenSexaquarkReaction::GenerateN(Int_t n_triggers) {
 #endif
 
         // 2) Prepare struck nucleon
-        Px_N = 0.;
-        Py_N = 0.;
-        Pz_N = 0.;
+        double Px_N = 0.;
+        double Py_N = 0.;
+        double Pz_N = 0.;
         GetFermiMomentum(Px_N, Py_N, Pz_N);
-        M_N = TDatabasePDG::Instance()->GetParticle(fStruckNucleonPDG)->Mass();
-        E_N = TMath::Sqrt(TMath::Power(Px_N, 2) + TMath::Power(Py_N, 2) + TMath::Power(Pz_N, 2) + TMath::Power(M_N, 2));
-        Nucleon.SetPxPyPzE(Px_N, Py_N, Pz_N, E_N);
+        double E_N = std::sqrt(Px_N * Px_N + Py_N * Py_N + Pz_N * Pz_N + fStruckNucleon_Mass * fStruckNucleon_Mass);
+        TLorentzVector Nucleon(Px_N, Py_N, Pz_N, E_N);
 
         // 3) Generate reaction
-        // fill masses of reaction products
-        for (Int_t j = 0; j < fNReactionProducts; j++) {
-            ReactionProductsMasses[j] = TDatabasePDG::Instance()->GetParticle(fReactionProductsPDG[j])->Mass();
-        }
         // determine momenta of reaction products
-        W = Sexaquark + Nucleon;
-        ThisPhaseSpace.SetDecay(W, fNReactionProducts, &ReactionProductsMasses[0]);
-        weight = (Float_t)ThisPhaseSpace.Generate();
+        TLorentzVector W = Sexaquark + Nucleon;
+        ThisPhaseSpace.SetDecay(W, fN_ReactionProducts, &fReactionProducts_Mass[0]);
+        double weight = (double)ThisPhaseSpace.Generate();
 
         // 4) Set secondary vertex
-        Radius_S = fRadiusMin + fRandom[3] * (fRadiusMax - fRadiusMin);  // 2D radius (uniform distribution) (in cm)
+        double Radius_S = std::sqrt(fRadiusMin * fRadiusMin + fRndm.Rndm() * (fRadiusMax * fRadiusMax - fRadiusMin * fRadiusMin));
 #if VERBOSE_MODE
         AliInfoF(">> Radius   = %.4f", Radius_S);
 #endif
-        Theta_S = Sexaquark.Theta();                                                  // polar angle (in radians)
-        Vz_S = Radius_S / TMath::Tan(Theta_S);                                        // z, in both cartesian and cylindrical coordinates
-        Radius3D_S = TMath::Sqrt(TMath::Power(Radius_S, 2) + TMath::Power(Vz_S, 2));  // 3D Radius -- radius in spherical coordinates
-        Vx_S = Radius3D_S * TMath::Sin(Theta_S) * TMath::Cos(Phi_S);                  // x, in cartesian coordinates
-        Vy_S = Radius3D_S * TMath::Sin(Theta_S) * TMath::Sin(Phi_S);                  // y, in cartesian coordinates
-        SecondaryVertex.SetXYZ(Vx_S, Vy_S, Vz_S);
+        double Theta_S = Sexaquark.Theta();          // polar angle (in radians)
+        double Vx_S = Radius_S * std::cos(Phi_S);    // x, in cartesian coordinates
+        double Vy_S = Radius_S * std::sin(Phi_S);    // y, in cartesian coordinates
+        double Vz_S = Radius_S / std::tan(Theta_S);  // z, in both cartesian and cylindrical coordinates (unprotected on purpose)
 
-        // add displacement from PV
-        SecondaryVertex = SecondaryVertex + PrimaryVertex;
+        TVector3 SecondaryVertex(Vx_S, Vy_S, Vz_S);
 
-        Beta_S = Sexaquark.P() / Sexaquark.E();
-        SecondaryTime = (SecondaryVertex.Mag() * TMath::Power(10, -7)) / (Beta_S * TMath::Ccgs());  // (in ns)
+        double Beta_S = Sexaquark.P() / Sexaquark.E();
+        double SecondaryTime = (SecondaryVertex.Mag() * 1E-7) / (Beta_S * TMath::Ccgs());  // (in ns)
 
-        /* Print anti-sexaquark and nucleon information */
-
-        AliInfoF("%i,%.8e,%.8e,%.8e,%.8e,%.8e,%.8e",              //
-                 ReactionID,                                      //
-                 Sexaquark.Px(), Sexaquark.Py(), Sexaquark.Pz(),  //
-                 Nucleon.Px(), Nucleon.Py(), Nucleon.Pz());
+#if VERBOSE_MODE
+        // -- print anti-sexaquark and nucleon information
+        AliInfoF("%i,%.8e,%.8e,%.8e,%.8e,%.8e,%.8e", ReactionID, Sexaquark.Px(), Sexaquark.Py(), Sexaquark.Pz(), Nucleon.Px(), Nucleon.Py(),
+                 Nucleon.Pz());
+#endif
 
 #if VERBOSE_MODE
         AliInfo("   Vertex            R        Theta          Phi");
-        AliInfoF("  Primary %12.7f %12.7f %12.7f", PrimaryVertex.Perp(), PrimaryVertex.Theta(), PrimaryVertex.Phi());
         AliInfoF("Secondary %12.7f %12.7f %12.7f", SecondaryVertex.Perp(), SecondaryVertex.Theta(), SecondaryVertex.Phi());
         AliInfo("");
         AliInfo("  I          PDG           Px           Py           Pz            E            M");
 #endif
 
-        // get 4-momentum vectors of the reaction products and put them on the Geant stack
-        for (Int_t j = 0; j < fNReactionProducts; j++) {
+        // -- define track counter
+        int nt = 0;
 
-            // add particle to the stack
-            PushTrack(fTrackIt,                          // done: track final state particles
-                      -1,                                // parent set to -1 (= primary)
-                      fReactionProductsPDG[j],           // PDG code of the product particle
+        // -- push anti-sexaquark
+        PushTrack(0,                                                                // don't transport
+                  -1,                                                               // no parent
+                  Sexaquark::Particle_PdgCode[Sexaquark::EParticle::kAntiNeutron],  // NOTE: pretend it's an anti-neutron
+                  Sexaquark.Px(), Sexaquark.Py(), Sexaquark.Pz(), Sexaquark.E(),    //
+                  fVertex[0], fVertex[1], fVertex[2], fTime,                        //
+                  0., 0., 0.,                                                       //
+                  TMCProcess::kPUserDefined,                                        //
+                  nt,                                                               //
+                  weight,                                                           //
+                  ReactionID);                                                      //
+
+        // -- push struck nucleon
+        PushTrack(0,                                                                     // don't transport
+                  -1,                                                                    // no parent
+                  fStruckNucleon_PdgCode,                                                //
+                  Nucleon.Px(), Nucleon.Py(), Nucleon.Pz(), Nucleon.E(),                 //
+                  SecondaryVertex.X(), SecondaryVertex.Y(), SecondaryVertex.Z(), fTime,  //
+                  0., 0., 0.,                                                            //
+                  TMCProcess::kPUserDefined,                                             //
+                  nt,                                                                    //
+                  weight,                                                                //
+                  ReactionID);                                                           //
+
+        // -- push reaction products
+        for (int j = 0; j < fN_ReactionProducts; ++j) {
+            PushTrack(1,                                 // transport
+                      -1,                                // NOTE: pretend they are primaries
+                      fReactionProducts_PdgCode[j],      // PDG code of the product particle
                       ThisPhaseSpace.GetDecay(j)->Px(),  // Px of the product particle (in GeV/c)
                       ThisPhaseSpace.GetDecay(j)->Py(),  // Py of the product particle (in GeV/c)
                       ThisPhaseSpace.GetDecay(j)->Pz(),  // Pz of the product particle (in GeV/c)
@@ -329,17 +250,16 @@ void AliGenSexaquarkReaction::GenerateN(Int_t n_triggers) {
                       SecondaryVertex.X(),               // vx: x-component of position of interaction vertex (in cm)
                       SecondaryVertex.Y(),               // vy: y-component of position of interaction vertex (in cm)
                       SecondaryVertex.Z(),               // vz: z-component of position of interaction vertex (in cm)
-                      SecondaryTime + PrimaryTime,       // vt: time of interaction vertex (in ns)
+                      SecondaryTime,                     // vt: time of interaction vertex (in ns)
                       0.,                                // polx: x-component of polarisation vector, 0 by default
                       0.,                                // poly: y-component of polarisation vector, 0 by default
                       0.,                                // polz: z-component of polarisation vector, 0 by default
-                      kPHInhelastic,                     // mech: production mechanism (Hadronic Inelastic Scattering)
-                      TrackCounter,                      // counter of tracks (needed and incremented internally by AliStack)
+                      TMCProcess::kPHInhelastic,         // mech: production mechanism (Hadronic Inelastic Scattering)
+                      nt,                                // output particle index
                       weight,                            // weight of the event
                       ReactionID);                       // generation status code
-
 #if VERBOSE_MODE
-            AliInfoF("%3i %12i %12.7f %12.7f %12.7f %12.7f %12.7f", TrackCounter, fReactionProductsPDG[j], ThisPhaseSpace.GetDecay(j)->Px(),
+            AliInfoF("%3i %12i %12.7f %12.7f %12.7f %12.7f %12.7f", nt, fReactionProducts_PdgCode[j], ThisPhaseSpace.GetDecay(j)->Px(),
                      ThisPhaseSpace.GetDecay(j)->Py(), ThisPhaseSpace.GetDecay(j)->Pz(), ThisPhaseSpace.GetDecay(j)->E(),
                      ThisPhaseSpace.GetDecay(j)->M());
 #endif
@@ -350,47 +270,43 @@ void AliGenSexaquarkReaction::GenerateN(Int_t n_triggers) {
 #endif
     }  // end of loop
 
-    /* Copied from AliGenBox */
+    // Copied from AliGenBox //
 
     AliGenEventHeader* header = new AliGenEventHeader("SEXAQUARK");
     header->SetPrimaryVertex(fVertex);
-    header->SetNProduced(n_triggers * fNReactions * fNReactionProducts);
+    header->SetNProduced(n_triggers * fReactionsPerTrigger * (2 + fN_ReactionProducts));
     header->SetInteractionTime(fTime);
 
-    // passes header either to the container or to gAlice
+    // passes header either to the container or to gAlice (ownership transferred)
     if (fContainer) {
         header->SetName(fName);
         fContainer->AddHeader(header);
     } else {
         gAlice->SetGenEventHeader(header);
     }
+    // no leak, because ownership is transferred in both branches
 }
 
-/*
- Generate a single trigger
- */
+// Generate a single trigger.
 void AliGenSexaquarkReaction::Generate() { GenerateN(1); }
 
-/*
- Print the parameters of the current instance
-*/
+// Print the parameters of the current instance.
 void AliGenSexaquarkReaction::PrintParameters() {
-
     AliInfo("> Initializing AliGenSexaquarkReaction");
     AliInfo("");
-    AliInfoF("  Number of Reactions = %i", fNReactions);
-    AliInfoF("  Chosen Reaction Channel : %c", fReactionChannel);
-    AliInfoF("  * Nucleon : %i", fStruckNucleonPDG);
+    AliInfoF("  Number of Reactions = %i", fReactionsPerTrigger);
+    AliInfoF("  Chosen Reaction Channel : %c", Sexaquark::RChannel_Char[fReactionChannel]);
+    AliInfoF("  * Nucleon : %i", fStruckNucleon_PdgCode);
     TString ReactionProducts_str = "{";
-    for (Int_t p = 0; p < fNReactionProducts; p++) {
-        ReactionProducts_str += Form("%i", fReactionProductsPDG[p]);
-        if (p + 1 != fNReactionProducts) ReactionProducts_str += ", ";
+    for (int p = 0; p < fN_ReactionProducts; ++p) {
+        ReactionProducts_str += Form("%i", fReactionProducts_PdgCode[p]);
+        if (p + 1 != fN_ReactionProducts) ReactionProducts_str += ", ";
     }
     ReactionProducts_str += "}";
     AliInfoF("  * Reaction Products : %s", ReactionProducts_str.Data());
     AliInfo("");
     AliInfo("  Injected AntiSexaquark:");
-    AliInfoF("  * M = %f (GeV/c^2)", fSexaquarkMass);
+    AliInfoF("  * M = %.2f (GeV/c^2)", fSexaquarkMass);
     AliInfoF("  * %f < Pt < %f (GeV/c)", fPtMin, fPtMax);
     AliInfoF("  * %f < Phi < %f (rad)", fPhiMin, fPhiMax);
     AliInfoF("  * %f < Y < %f", fYMin, fYMax);
@@ -400,21 +316,36 @@ void AliGenSexaquarkReaction::PrintParameters() {
     AliInfo("");
 }
 
-/*
- Based on the current model for the Fermi momentum, get a random value
- - uses: fFermiMomentum, fFermiMomentumError, fFermiMomentumModel
- - output: Px, Py, Pz
- */
-void AliGenSexaquarkReaction::GetFermiMomentum(Float_t& Px, Float_t& Py, Float_t& Pz) {
+// Based on the current model for the Fermi momentum, get a random value.
+// - uses: fFermiMomentumSigma
+// - output: Px, Py, Pz
+void AliGenSexaquarkReaction::GetFermiMomentum(double& Px, double& Py, double& Pz) {
+    Px = fRndm.Gaus(0., fFermiMomentumSigma);
+    Py = fRndm.Gaus(0., fFermiMomentumSigma);
+    Pz = fRndm.Gaus(0., fFermiMomentumSigma);
+}
 
-    Float_t P_N = fFermiMomentumModel->GetRandom();
-    // given the total momentum, set phi,theta as uniform and uncorrelated variables
-    Float_t random_N[2];
-    Rndm(random_N, 2);
-    Float_t Phi_N = 2 * TMath::Pi() * random_N[0];       // azimuthal angle (uniform distribution) (in radians)
-    Float_t Theta_N = TMath::ACos(1 - 2 * random_N[1]);  // polar angle (based on inverse CDF) (in radians)
-    // then, assign px,py,pz
-    Px = P_N * TMath::Cos(Phi_N) * TMath::Sin(Theta_N);
-    Py = P_N * TMath::Sin(Phi_N) * TMath::Sin(Theta_N);
-    Pz = P_N * TMath::Cos(Theta_N);
+double AliGenSexaquarkReaction::BlastWaveFcn(double* x, double* par) {
+
+    double pt = x[0];
+
+    double m0 = par[0];
+    double t_kin = par[1];
+    double avg_beta_temp = par[2];
+    double np = par[3];
+
+    double mt = std::sqrt(pt * pt + m0 * m0);
+    double beta_s = (np + 2) * avg_beta_temp / 2.;
+
+    static RMath::Integrator integrator;
+
+    auto BlastWaveIntegrand = [&](double r) -> double {
+        double rho = std::atanh(beta_s * std::pow(r, np));
+        return r * TMath::BesselI0(pt * std::sinh(rho) / t_kin) * TMath::BesselK1(mt * std::cosh(rho) / t_kin);
+    };
+
+    RMath::Functor1D functor(BlastWaveIntegrand);
+    integrator.SetFunction(functor);
+
+    return pt * mt * integrator.Integral(0., 1.);
 }
